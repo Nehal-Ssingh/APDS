@@ -17,9 +17,7 @@ const Post = (props) => (
     <td>
       <button
         className="btn btn-link"
-        onClick={() => {
-          props.deletePost(props.post._id);
-        }}
+        onClick={() => props.deletePost(props.post._id)}
       >
         Delete
       </button>
@@ -32,27 +30,51 @@ export default function PostList() {
 
   useEffect(() => {
     async function getPosts() {
-      const response = await fetch("https://localhost:3001/post");
+      try {
+        const response = await fetch("https://localhost:3001/post");
 
-      if (!response.ok) {
-        const message = `An error occurred: ${response.statusText}`;
-        window.alert(message);
-        return;
+        if (!response.ok) {
+          throw new Error(`An error occurred: ${response.statusText}`);
+        }
+
+        const posts = await response.json();
+        console.log(posts); // Debugging line to see fetched posts
+        setPosts(posts);
+      } catch (error) {
+        window.alert(error.message);
       }
-
-      const posts = await response.json();
-      console.log(posts); // Debugging line to see fetched posts
-      setPosts(posts);
     }
 
     getPosts();
   }, []);
 
+  // This method is to delete a post
+  async function deletePost(id) {
+    try {
+      const token = localStorage.getItem("jwt");
+      const response = await fetch(`https://localhost:3001/post/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`An error occurred: ${response.statusText}`);
+      }
+
+      // Filter out the deleted post from the state
+      setPosts(posts.filter((post) => post._id !== id));
+    } catch (error) {
+      window.alert(error.message);
+    }
+  }
+
   function postList() {
     return posts.map((post) => (
       <Post
         post={post}
-        deletePost={() => deletePost(post._id)}
+        deletePost={deletePost} // Pass deletePost as a prop
         key={post._id}
       />
     ));
